@@ -1,2 +1,2 @@
 # e-commerce-webscrapper
-Web scrapper tool to scrap data from Amazon e commerce site
+Web scrapper tool to scrap data from an Ecommerce site

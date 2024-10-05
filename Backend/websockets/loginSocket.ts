@@ -1,18 +1,19 @@
 import { Socket } from "socket.io";
 import catchWebSocketAsync from "../Utils/socketErrorHandler";
-import AmazonLogin from "../playwright/AmazonLogin";
+import EcommerceScrapper from "../playwright/EcommerceScrapper";
 
 function handleLoginSession(websocket: Socket) {
-    websocket.on('crawlAmazonHome', catchWebSocketAsync(async (ack: Function) => {
-        await AmazonLogin.navigateToHome();
-        ack({ message: 'Navigated to Amazon Home' });
-        websocket.emit('amazonLogin');
+    websocket.on('loginToDashboard', catchWebSocketAsync(async (message: LoginRequest, ack: Function) => {
+        const { userName, password } = message;
+        await EcommerceScrapper.loginToDashboard(userName, password, websocket);
+        console.log('Navigated to dashboard✨');
+        ack({ message: 'Navigated to Ecommerce dashboard!🎉' });
     }, websocket));
 
-    websocket.on('amazonLogin', catchWebSocketAsync(async (ack: Function) => {
-        ack({ message: 'Navigating to Amazon login page...' });
-        await AmazonLogin.navigateToLogin()
-        ack({ message: 'Navigated to Amazon login Page !' })
+    websocket.on('scrapOrderHistory', catchWebSocketAsync(async (_message: unknown, ack: Function) => {
+        const productDetails = await EcommerceScrapper.scrapOrderHistory(websocket);
+        console.log(JSON.stringify({ scrapped: productDetails }));
+        ack({ data: productDetails });
     }, websocket));
 }
 
