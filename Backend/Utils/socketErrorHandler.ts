@@ -1,5 +1,4 @@
 import { Socket } from "socket.io";
-import { CatchError } from "../@types/Utils/socketErrorHandler";
 
 const catchWebSocketAsync = (func: Function, websocket: Socket) => {
     const handleError = (err: CatchError) => {
