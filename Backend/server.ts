@@ -1,39 +1,37 @@
 import dotenv from 'dotenv';
+dotenv.config();
 import express, { Express } from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import handleLoginSession from './websockets/loginSocket';
-
-dotenv.config();
-
-const PORT = process.env.PORT || 3000;
+import handleScrapDataSession from './websockets/scrapOrderDetails';
+import { PORT, LOGS, SOCKET_URLS, SOCKET_EVENTS } from './Utils/constants';
 
 const app: Express = express();
 
 const httpServer = createServer(app);
 httpServer.listen(PORT, () => {
-    console.log('Listening on Port: ' + PORT);
+    console.log(LOGS.LISTENING_TO_PORT);
 });
 
 const io = new Server(httpServer, { cors: { origin: 'http://localhost:3001' } });
 
 io
-    .of('api/scrapper/amz')
-    .on('connection', handleLoginSession)
-    .on('disconnect', () => {
-        console.log('Closing the connections...');
+    .of(SOCKET_URLS.ORDER_HISTORY_URL)
+    .on(SOCKET_EVENTS.CONNECTION, handleScrapDataSession)
+    .on(SOCKET_EVENTS.DISCONNECT, () => {
+        console.log(LOGS.CLOSE_CONNECTIONS);
     });
 
 process.on('SIGTERM', () => {
-    console.log('Closing the connections...');
-    io.of('api/scrapper/amz').disconnectSockets(true);
+    console.log(LOGS.CLOSE_CONNECTIONS);
+    io.of(SOCKET_URLS.ORDER_HISTORY_URL).disconnectSockets(true);
     httpServer.closeAllConnections();
     process.exit(1);
 });
 
 process.on('SIGINT', () => {
-    console.log('Closing the connections...');
-    io.of('api/scrapper/amz').disconnectSockets(true);
+    console.log(LOGS.CLOSE_CONNECTIONS);
+    io.of(SOCKET_URLS.ORDER_HISTORY_URL).disconnectSockets(true);
     httpServer.closeAllConnections();
     process.exit(1);
 });

@@ -1,7 +1,43 @@
 import pw from 'playwright';
 import ScrapperUtility from './ScrapperUtility';
 import { Socket } from 'socket.io';
+import { SOCKET_EVENTS, SOCKET_MESSAGES, SCREENSHOT_FILE_NAMES, LOCATORS, ERROR_MSG, LOGS, APP_URLS } from '../Utils/constants';
 
+const { RECEIVE_UPDATES_FOR_LOGIN, RECEIVE_UPDATES_FOR_SCRAPPING } = SOCKET_EVENTS;
+
+const {
+    BROWSER_OPENING,
+    BROWSER_OPENED,
+    NAVIGATED_TO_SITE,
+    NAVIGATING_TO_SITE,
+    EMAIL_TYPING,
+    PASSWORD_TYPING,
+    NAVIGATING_ORDER_HISTORY,
+    NAVIGATED_ORDER_HISTORY,
+    STARTING_SCRAPING_PROCESS,
+} = SOCKET_MESSAGES;
+
+const {
+    EMAIL_PLACEHOLDER,
+    PASSWORD_PLACEHOLDER,
+    ENTER_KEY,
+    PRODUCT_DETAILS_LINK_XPATH,
+    PRODUCT_DETAILS_IDENTIFIER,
+    NAME_XPATH,
+    PRICE_XPATH,
+    BACK_BTN_XPATH,
+    ORDER_HISTORY_IDENTIFIER,
+    ORDERS_LIST_SELECTOR,
+    ORDER_HISTORY_BTN,
+    ORDER_HISTORY_TITLE,
+    DASHBOARD_IDENTIFIER,
+} = LOCATORS;
+
+const { DASHBOARD, DEBUG, ORDER_HISTORY } = SCREENSHOT_FILE_NAMES;
+
+const { UNKNOWN_ERROR_OCCURRED } = ERROR_MSG;
+
+const { CLOSE_CONNECTIONS } = LOGS;
 class EcommerceScrapper {
     private ecommercePage: pw.Page = null as unknown as pw.Page;
     constructor() { }
@@ -15,42 +51,51 @@ class EcommerceScrapper {
     async loginToDashboard(userName: string, password: string, websocket: Socket) {
         try {
             if (this.ecommercePage) {
-                websocket.emit('receiveUpdatesForLogin', 'Navigating to the site...🏄‍♂️');
-                await this.ecommercePage.goto('https://ecommerce-playground.lambdatest.io/index.php?route=account/login');
-                websocket.emit('receiveUpdatesForLogin', 'Navigated to the site🎉');
-                websocket.emit('receiveUpdatesForLogin', 'typing the email...👩‍💻');
-                const emailInput = this.ecommercePage.getByPlaceholder('E-Mail Address');
+                websocket.emit(RECEIVE_UPDATES_FOR_LOGIN, NAVIGATING_TO_SITE);
+                await this.ecommercePage.goto(APP_URLS.ECOMMERCE_PLAYGROUND);
+                websocket.emit(RECEIVE_UPDATES_FOR_LOGIN, NAVIGATED_TO_SITE);
+
+                websocket.emit(RECEIVE_UPDATES_FOR_LOGIN, EMAIL_TYPING);
+                const emailInput = this.ecommercePage.getByPlaceholder(EMAIL_PLACEHOLDER);
                 await emailInput.fill(userName);
                 await this.ecommercePage.waitForTimeout(3000);
-                websocket.emit('receiveUpdatesForLogin', 'typing the password...🧑‍💻');
-                const passwordInput = this.ecommercePage.getByPlaceholder('Password');
+
+                websocket.emit(RECEIVE_UPDATES_FOR_LOGIN, PASSWORD_TYPING);
+                const passwordInput = this.ecommercePage.getByPlaceholder(PASSWORD_PLACEHOLDER);
                 passwordInput.fill(password);
                 await this.ecommercePage.waitForTimeout(3000);
-                await this.ecommercePage.keyboard.press('Enter');
-                const dashboardIdentifier = this.ecommercePage.getByText('Edit your account information');
+
+                await this.ecommercePage.keyboard.press(ENTER_KEY);
+
+                const dashboardIdentifier = this.ecommercePage.getByText(DASHBOARD_IDENTIFIER);
                 await dashboardIdentifier.first().waitFor();
-                await ScrapperUtility.takeScreenshot(this.ecommercePage, 'Dashboard');
+
+                await ScrapperUtility.takeScreenshot(this.ecommercePage, DASHBOARD);
             } else {
-                websocket.emit('receiveUpdatesForLogin', 'Setting things ready for you...⚒️');
+                websocket.emit(RECEIVE_UPDATES_FOR_LOGIN, BROWSER_OPENING);
                 await this.setup();
-                websocket.emit('receiveUpdatesForLogin', 'Setup is complete✅');
+                websocket.emit(RECEIVE_UPDATES_FOR_LOGIN, BROWSER_OPENED);
+
                 await this.loginToDashboard(userName, password, websocket);
             }
         } catch (e: any) {
-            await ScrapperUtility.takeScreenshot(this.ecommercePage, `Debug-${Date.now()}`);
-            websocket.emit('receiveUpdatesForLogin', `${e.message || 'UNKNOWN_ERROR_OCCURRED'} 🔴❗`);
-            websocket.emit('receiveUpdatesForLogin', `Closing the connection🕛`);
+            await ScrapperUtility.takeScreenshot(this.ecommercePage, DEBUG());
+
+            websocket.emit(RECEIVE_UPDATES_FOR_LOGIN, `${e.message || UNKNOWN_ERROR_OCCURRED} 🔴❗`);
+            websocket.emit(RECEIVE_UPDATES_FOR_LOGIN, CLOSE_CONNECTIONS);
+
             await this.ecommercePage.close();
             websocket.disconnect();
+
             throw e;
         }
     }
     private async iterateProduct(index: number) {
-        const xpath = `xpath=//*[@id="content"]/div[1]/table/tbody/tr[${index+1}]/td[7]/a`;
+        const xpath = PRODUCT_DETAILS_LINK_XPATH(index);
         const productLocator = this.ecommercePage.locator(xpath);
         if (await productLocator.isVisible()) {
             await productLocator.click();
-            const productDetailsLocator = this.ecommercePage.getByText('Product Name')
+            const productDetailsLocator = this.ecommercePage.getByText(PRODUCT_DETAILS_IDENTIFIER);
             await productDetailsLocator.waitFor();
             return true;
         }
@@ -59,29 +104,26 @@ class EcommerceScrapper {
     }
 
     private async appendProductDetails(productsArr: ProductDetails[]) {
-        const nameXpath = `xpath=//*[@id="content"]/div[1]/table/tbody/tr/td[1]`;
-        const priceXpath = `//*[@id="content"]/div[1]/table/tfoot/tr[5]/td[3]`;
-        const name = await this.ecommercePage.locator(nameXpath).innerText();
-        const price = await this.ecommercePage.locator(priceXpath).innerText();
+        const name = await this.ecommercePage.locator(NAME_XPATH).innerText();
+        const price = await this.ecommercePage.locator(PRICE_XPATH).innerText();
         productsArr.push({ name, price });
     }
 
     private async backToOrderHistory() {
-        const backButtonXpath = '//*[@id="content"]/div[2]/div/a';
-        await this.ecommercePage.locator(backButtonXpath).click();
-        await this.ecommercePage.getByText('Logout').nth(1).waitFor();
+        await this.ecommercePage.locator(BACK_BTN_XPATH).click();
+        await this.ecommercePage.getByText(ORDER_HISTORY_IDENTIFIER).nth(1).waitFor();
     }
 
     private async getOrderDetails(): Promise<ProductDetails[]> {
         const productDetails: ProductDetails[] = []
-        const orderSelector = await this.ecommercePage.locator('#content > div.table-responsive > table > tbody > tr').all();
+        const orderSelector = await this.ecommercePage.locator(ORDERS_LIST_SELECTOR).all();
         const tenOrders = orderSelector.slice(0, 10);
-        for (let [index, cell] of tenOrders.entries()) {
+        for (let [index, _cell] of tenOrders.entries()) {
             if (await this.iterateProduct(Number(index))) {
                 await this.appendProductDetails(productDetails);
                 await this.backToOrderHistory();
             } else {
-                ScrapperUtility.takeScreenshot(this.ecommercePage, 'debug-1');
+                ScrapperUtility.takeScreenshot(this.ecommercePage, DEBUG());
                 break;
             }
         }
@@ -92,23 +134,29 @@ class EcommerceScrapper {
     async scrapOrderHistory(websocket: Socket): Promise<ProductDetails[]> {
         try {
             if (this.ecommercePage) {
-                await this.ecommercePage.getByText('View your order history').first().click();
-                websocket.emit('receiveUpdatesForScrapping', 'Navigating to order history...🏄‍♂️');
-                await this.ecommercePage.getByText('Order History').first().waitFor();
-                await ScrapperUtility.takeScreenshot(this.ecommercePage, 'OrderHistory');
-                websocket.emit('receiveUpdatesForScrapping', 'Navigated to order history🚩');
-                websocket.emit('receiveUpdatesForScrapping', 'Starting the scrapping process...📝');
+                await this.ecommercePage.getByText(ORDER_HISTORY_BTN).first().click();
+                websocket.emit(RECEIVE_UPDATES_FOR_SCRAPPING, NAVIGATING_ORDER_HISTORY);
+
+                await this.ecommercePage.getByText(ORDER_HISTORY_TITLE).first().waitFor();
+                await ScrapperUtility.takeScreenshot(this.ecommercePage, ORDER_HISTORY);
+                websocket.emit(RECEIVE_UPDATES_FOR_SCRAPPING, NAVIGATED_ORDER_HISTORY);
+
+                websocket.emit(RECEIVE_UPDATES_FOR_SCRAPPING, STARTING_SCRAPING_PROCESS);
+
                 return await this.getOrderDetails();
             } else {
                 await this.setup();
                 return await this.scrapOrderHistory(websocket);
             }
         } catch (e: any) {
-            await ScrapperUtility.takeScreenshot(this.ecommercePage, `Debug-${Date.now()}`);
-            websocket.emit('receiveUpdatesForScrapping', `${e.message || 'UNKNOWN_ERROR_OCCURRED'} 🔴❗`);
-            websocket.emit('receiveUpdatesForScrapping', `Closing the connection🕛`);
+            await ScrapperUtility.takeScreenshot(this.ecommercePage, DEBUG());
+
+            websocket.emit(RECEIVE_UPDATES_FOR_SCRAPPING, `${e.message || UNKNOWN_ERROR_OCCURRED} 🔴❗`);
+            websocket.emit(RECEIVE_UPDATES_FOR_SCRAPPING, CLOSE_CONNECTIONS);
+
             await this.ecommercePage.close();
             websocket.disconnect();
+
             throw e;
         }
     }
