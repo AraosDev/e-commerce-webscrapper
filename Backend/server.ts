@@ -13,7 +13,7 @@ httpServer.listen(PORT, () => {
     console.log(LOGS.LISTENING_TO_PORT);
 });
 
-const io = new Server(httpServer, { cors: { origin: 'http://localhost:3001' } });
+const io = new Server(httpServer, { cors: { origin: 'http://localhost:3000' } });
 
 io
     .of(SOCKET_URLS.ORDER_HISTORY_URL)

@@ -1,0 +1,24 @@
+.feed-wrapper {
+    height: 350px;
+    overflow: auto;
+    background-color: #282c34;
+    color: #fff;
+    width: 380px;
+    padding: 5px;
+}
+
+p {
+    margin-bottom: 2px !important;
+    font-family: monospace;
+    font-size: 12px;
+}
+
+.reset-btn {
+    width: 94px !important;
+    font-size: 14px !important;
+    height: 30px !important;
+    padding: 2px !important;
+    background-color: #565658 !important;
+    color: #fff !important;
+    border: 2px solid #282c34 !important;
+}

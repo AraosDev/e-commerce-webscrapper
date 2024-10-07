@@ -162,4 +162,4 @@ class EcommerceScrapper {
     }
 }
 
-export default new EcommerceScrapper();
+export default EcommerceScrapper;
