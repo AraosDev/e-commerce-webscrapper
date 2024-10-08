@@ -4,9 +4,9 @@ import FormInput from "../../common/FormInput";
 import { LABELS, SOCKET_EVENTS } from "../../common/constants";
 import { Button } from "react-bootstrap";
 import './index.css';
-import scrapOrdersSocket from "../../common/socket";
+import { scrapOrdersSocket } from "../../common/socket";
 import { LoginAckMsg, LoginRequest } from "../../types/common/socket";
-import { OrderHistory, ProductDetails, Views } from "../../types/components/FetchLastOrders.d";
+import { ProductData, ProductDetails, Views } from "../../types/components/FetchLastOrders.d";
 import DataTable from "../../common/DataTable";
 import { ColumnConfig } from "../../types/common/DataTable.d";
 
@@ -27,7 +27,7 @@ function FetchLastOrders() {
     setLiveFeed(message);
   }
   
-  function orderHistoryHandler(orderHistory: OrderHistory) {
+  function orderHistoryHandler(orderHistory: ProductData) {
     setLiveFeed(JSON.stringify(orderHistory));
     setOrderHistoryData(
       orderHistory.data.map(({name, link, ...rest}) => ({

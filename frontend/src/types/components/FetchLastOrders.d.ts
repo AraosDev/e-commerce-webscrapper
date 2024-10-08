@@ -5,7 +5,7 @@ export type ProductDetails = {
     key: string;
 }
 
-export interface OrderHistory {
+export interface ProductData {
     data: Omit<ProductDetails, 'key'>[];
 }
 

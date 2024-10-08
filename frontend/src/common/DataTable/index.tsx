@@ -23,7 +23,7 @@ function DataTable(props: DataTableProps) {
     hiddenElement.click();  
   } 
   return (
-    <div className="d-flex flex-column">
+    <div className="d-flex flex-column" style={{height: 370, overflow: 'auto'}}>
         <div className="d-flex justify-content-end m-2">
             <BsDownload
                 className="cursor-pointer"
@@ -44,7 +44,13 @@ function DataTable(props: DataTableProps) {
                     <tr key={dataObj.key}>
                         {
                             columnConfig.map(({ name }) => (
-                                <td key={name}>{dataObj[name]}</td>
+                                <td key={name}>
+                                    {
+                                        name === 'link' && dataObj[name]?.startsWith('http') ? 
+                                        <a href={dataObj[name]} target="_blank" rel="noreferrer">Product Link</a>
+                                        : dataObj[name]
+                                    }
+                                </td>
                             ))
                         }
                     </tr>
