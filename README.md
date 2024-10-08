@@ -25,3 +25,5 @@ Frontend:
 User Credentials to try out
 username: testbot@gmail.com
 password: test123
+
+Ecommerce playground link: https://ecommerce-playground.lambdatest.io/index.php?route=account/login
